@@ -421,6 +421,11 @@ class MultipleImagePickerImp(reactContext: ReactApplicationContext?) :
     }
 
     private fun setCropOption(config: PickerCropConfig?) {
+
+          cropOption.setShowCropFrame(false)      // 크롭 프레임 숨기기
+    // 하단 컨트롤 UI 숨기기
+    cropOption.setHideBottomControls(true)  // 하단 컨트롤 완전히 숨기기
+          
         cropOption.setShowCropFrame(true)
         cropOption.setShowCropGrid(true)
         cropOption.setCircleDimmedLayer(config?.circle ?: false)
@@ -436,42 +441,13 @@ class MultipleImagePickerImp(reactContext: ReactApplicationContext?) :
         cropOption.setSkipCropMimeType(*getNotSupportCrop())
 
 
-        val ratioCount = config?.ratio?.size ?: 0
-
-        if (config?.defaultRatio != null || ratioCount > 0) {
-
-            var ratioList = arrayOf(AspectRatio("Original", 0f, 0f))
-
-            if (ratioCount > 0) {
-                config?.ratio?.take(4)?.toTypedArray()?.forEach { item ->
-                    ratioList += AspectRatio(
-                        item.title, item.width.toFloat(), item.height.toFloat()
-                    )
-                }
-            }
-
-            // Add default Aspects
-            ratioList += arrayOf(
-                AspectRatio(null, 1f, 1f),
-                AspectRatio(null, 16f, 9f),
-                AspectRatio(null, 4f, 3f),
-                AspectRatio(null, 3f, 2f)
-            )
-
-            config?.defaultRatio?.let {
-                val defaultRatio = AspectRatio(it.title, it.width.toFloat(), it.height.toFloat())
-                ratioList = arrayOf(defaultRatio) + ratioList
-
-            }
-
-            cropOption.apply {
-
-                setAspectRatioOptions(
-                    0,
-                    *ratioList.take(5).toTypedArray()
-                )
-            }
-        }
+      // 1:1.25 비율만 설정하고 비율 선택 UI 숨기기
+    config?.defaultRatio?.let {
+        val defaultRatio = AspectRatio(it.title, it.width.toFloat(), it.height.toFloat())
+        // 단일 비율만 설정하여 UI 숨기기
+        cropOption.setAspectRatioOptions(0, defaultRatio)
+    }
+       
     }
 
 

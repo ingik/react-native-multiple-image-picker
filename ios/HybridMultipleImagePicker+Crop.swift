@@ -46,9 +46,8 @@ extension HybridMultipleImagePicker {
     func setCropConfig(_ cropConfig: PickerCropConfig) -> EditorConfiguration {
         var config = EditorConfiguration()
 
-        if let defaultRatio = cropConfig.defaultRatio {
-            config.cropSize.aspectRatio = .init(width: defaultRatio.width, height: defaultRatio.height)
-        }
+        // 1:1.25 비율로 강제 설정
+        config.cropSize.aspectRatio = .init(width: 1, height: 1.25)
 
         config.photo.defaultSelectedToolOption = .cropSize
 
@@ -56,9 +55,8 @@ extension HybridMultipleImagePicker {
 
         config.cropSize.defaultSeletedIndex = 0
 
-        let freeStyle = cropConfig.freeStyle ?? true
-
-        config.cropSize.isFixedRatio = !freeStyle
+        // 비율만 고정
+        config.cropSize.isFixedRatio = true  // 비율 고정
 
         config.isWhetherFinishButtonDisabledInUneditedState = true
 
@@ -70,29 +68,8 @@ extension HybridMultipleImagePicker {
 
         config.photo.defaultSelectedToolOption = .cropSize
 
-        if config.cropSize.isRoundCrop {
-            config.cropSize.aspectRatios = []
-        } else {
-            var aspectRatios: [EditorRatioToolConfig] = PickerConfiguration.default.editor.cropSize.aspectRatios
-
-            let ratio = cropConfig.ratio
-            // custom ratio
-            if ratio.count > 0 {
-                ratio.forEach { ratio in
-                    let width = Int(ratio.width)
-                    let height = Int(ratio.height)
-
-                    aspectRatios.insert(.init(title: .custom(ratio.title ?? "\(width)/\(height)"), ratio: .init(width: width, height: height)), at: 3)
-                }
-            }
-
-            config.cropSize.aspectRatios = freeStyle ? aspectRatios : aspectRatios.filter {
-                // check freeStyle crop
-                if $0.ratio == .zero { return false }
-
-                return true
-            }
-        }
+        // 비율 선택 UI 완전히 숨기기 (1:1.25만 사용)
+        config.cropSize.aspectRatios = []
 
         return config
     }
