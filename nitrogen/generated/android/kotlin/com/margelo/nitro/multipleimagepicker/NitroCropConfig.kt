@@ -25,7 +25,8 @@ data class NitroCropConfig
     val circle: Boolean?,
     val ratio: Array<CropRatio>,
     val defaultRatio: CropRatio?,
-    val freeStyle: Boolean?
+    val freeStyle: Boolean?,
+    val isSquare: Boolean?
   ) {
   /* main constructor */
 }

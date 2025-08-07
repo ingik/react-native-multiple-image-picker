@@ -441,12 +441,16 @@ class MultipleImagePickerImp(reactContext: ReactApplicationContext?) :
         cropOption.setSkipCropMimeType(*getNotSupportCrop())
 
 
-      // 1:1.25 비율만 설정하고 비율 선택 UI 숨기기
-    config?.defaultRatio?.let {
-        val defaultRatio = AspectRatio(it.title, it.width.toFloat(), it.height.toFloat())
-        // 단일 비율만 설정하여 UI 숨기기
-        cropOption.setAspectRatioOptions(0, defaultRatio)
-    }
+      // isSquare 옵션에 따라 비율 설정
+      val aspectRatio = if (config?.isSquare == true) {
+          // 1:1 비율로 강제 설정
+          AspectRatio("1:1", 1f, 1f)
+      } else {
+          // 1:1.25 비율로 강제 설정
+          AspectRatio("1:1.25", 1f, 1.25f)
+      }
+      // 단일 비율만 설정하여 UI 숨기기
+      cropOption.setAspectRatioOptions(0, aspectRatio)
        
     }
 

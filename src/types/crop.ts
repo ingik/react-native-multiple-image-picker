@@ -27,6 +27,12 @@ export type PickerCropConfig = {
 
   /** Enable free style cropping */
   freeStyle?: boolean
+
+  /**
+   * Force square aspect ratio (1:1) when true, or use 1:1.25 ratio when false
+   * @platform ios, android
+   */
+  isSquare?: boolean
 }
 
 // CROP

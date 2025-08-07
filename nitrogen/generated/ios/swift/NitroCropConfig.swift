@@ -18,7 +18,7 @@ public extension NitroCropConfig {
   /**
    * Create a new instance of `NitroCropConfig`.
    */
-  init(language: Language, presentation: Presentation, circle: Bool?, ratio: [CropRatio], defaultRatio: CropRatio?, freeStyle: Bool?) {
+  init(language: Language, presentation: Presentation, circle: Bool?, ratio: [CropRatio], defaultRatio: CropRatio?, freeStyle: Bool?, isSquare: Bool?) {
     self.init(language, presentation, { () -> bridge.std__optional_bool_ in
       if let __unwrappedValue = circle {
         return bridge.create_std__optional_bool_(__unwrappedValue)
@@ -39,6 +39,12 @@ public extension NitroCropConfig {
       }
     }(), { () -> bridge.std__optional_bool_ in
       if let __unwrappedValue = freeStyle {
+        return bridge.create_std__optional_bool_(__unwrappedValue)
+      } else {
+        return .init()
+      }
+    }(), { () -> bridge.std__optional_bool_ in
+      if let __unwrappedValue = isSquare {
         return bridge.create_std__optional_bool_(__unwrappedValue)
       } else {
         return .init()
@@ -133,6 +139,23 @@ public extension NitroCropConfig {
     @inline(__always)
     set {
       self.__freeStyle = { () -> bridge.std__optional_bool_ in
+        if let __unwrappedValue = newValue {
+          return bridge.create_std__optional_bool_(__unwrappedValue)
+        } else {
+          return .init()
+        }
+      }()
+    }
+  }
+  
+  var isSquare: Bool? {
+    @inline(__always)
+    get {
+      return self.__isSquare.value
+    }
+    @inline(__always)
+    set {
+      self.__isSquare = { () -> bridge.std__optional_bool_ in
         if let __unwrappedValue = newValue {
           return bridge.create_std__optional_bool_(__unwrappedValue)
         } else {

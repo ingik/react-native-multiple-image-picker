@@ -51,6 +51,8 @@ namespace margelo::nitro::multipleimagepicker {
       jni::local_ref<JCropRatio> defaultRatio = this->getFieldValue(fieldDefaultRatio);
       static const auto fieldFreeStyle = clazz->getField<jni::JBoolean>("freeStyle");
       jni::local_ref<jni::JBoolean> freeStyle = this->getFieldValue(fieldFreeStyle);
+      static const auto fieldIsSquare = clazz->getField<jni::JBoolean>("isSquare");
+      jni::local_ref<jni::JBoolean> isSquare = this->getFieldValue(fieldIsSquare);
       return NitroCropConfig(
         language->toCpp(),
         presentation->toCpp(),
@@ -66,7 +68,8 @@ namespace margelo::nitro::multipleimagepicker {
           return __vector;
         }(),
         defaultRatio != nullptr ? std::make_optional(defaultRatio->toCpp()) : std::nullopt,
-        freeStyle != nullptr ? std::make_optional(static_cast<bool>(freeStyle->value())) : std::nullopt
+        freeStyle != nullptr ? std::make_optional(static_cast<bool>(freeStyle->value())) : std::nullopt,
+        isSquare != nullptr ? std::make_optional(static_cast<bool>(isSquare->value())) : std::nullopt
       );
     }
 
@@ -90,7 +93,8 @@ namespace margelo::nitro::multipleimagepicker {
           return __array;
         }(),
         value.defaultRatio.has_value() ? JCropRatio::fromCpp(value.defaultRatio.value()) : nullptr,
-        value.freeStyle.has_value() ? jni::JBoolean::valueOf(value.freeStyle.value()) : nullptr
+        value.freeStyle.has_value() ? jni::JBoolean::valueOf(value.freeStyle.value()) : nullptr,
+        value.isSquare.has_value() ? jni::JBoolean::valueOf(value.isSquare.value()) : nullptr
       );
     }
   };
