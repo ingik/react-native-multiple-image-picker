@@ -189,7 +189,8 @@ class MultipleImagePickerImp(reactContext: ReactApplicationContext?) :
                 circle = options.circle,
                 ratio = options.ratio,
                 defaultRatio = options.defaultRatio,
-                freeStyle = options.freeStyle
+                freeStyle = options.freeStyle,
+                 isSquare = options.isSquare
             )
         )
 
