@@ -33,7 +33,7 @@ extension HybridMultipleImagePicker {
         cameraConfig.editor.modalPresentationStyle = .fullScreen
 
         if let crop = config.crop {
-            let editor = PickerCropConfig(circle: crop.circle, ratio: crop.ratio, defaultRatio: crop.defaultRatio, freeStyle: crop.freeStyle)
+            let editor = PickerCropConfig(circle: crop.circle, ratio: crop.ratio, defaultRatio: crop.defaultRatio, freeStyle: crop.freeStyle, isSquare: crop.isSquare)
             cameraConfig.editor = setCropConfig(editor)
         } else {
             cameraConfig.allowsEditing = false
