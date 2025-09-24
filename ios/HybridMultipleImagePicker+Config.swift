@@ -117,13 +117,13 @@ extension HybridMultipleImagePicker {
         // 편집 버튼을 항상 표시하도록 설정
         previewView.bottomView.isHiddenEditButton = false
         
-        // 편집 기능 활성화
+        // 편집 기능 활성화 - 간단하게
         if let crop = options.crop {
-            config.editor = setCropConfig(crop)
+            let simpleCrop = PickerCropConfig(circle: crop.circle, ratio: [], defaultRatio: nil, freeStyle: crop.freeStyle, isSquare: crop.isSquare)
+            config.editor = setCropConfig(simpleCrop)
         } else {
-            // 기본 크롭 설정으로 편집 버튼 활성화
-            let defaultCrop = PickerCropConfig(circle: false, ratio: [], defaultRatio: nil, freeStyle: false, isSquare: nil)
-            config.editor = setCropConfig(defaultCrop)
+            // 편집 비활성화
+            config.editorOptions = []
         }
 
         photoList.finishSelectionAfterTakingPhoto = true

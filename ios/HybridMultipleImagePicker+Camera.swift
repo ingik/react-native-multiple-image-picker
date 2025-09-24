@@ -33,15 +33,8 @@ extension HybridMultipleImagePicker {
         cameraConfig.editor.modalPresentationStyle = .fullScreen
 
         if let crop = config.crop {
-            // CropRatio 객체들을 안전하게 처리
-            let ratioArray: [CropRatio] = crop.ratio.map { ratio in
-                return CropRatio(title: ratio.title, width: ratio.width, height: ratio.height)
-            }
-            
-            let defaultRatio: CropRatio? = crop.defaultRatio != nil ? 
-                CropRatio(title: crop.defaultRatio!.title, width: crop.defaultRatio!.width, height: crop.defaultRatio!.height) : nil
-            
-            let editor = PickerCropConfig(circle: crop.circle, ratio: ratioArray, defaultRatio: defaultRatio, freeStyle: crop.freeStyle, isSquare: crop.isSquare)
+            // 간단하게 빈 배열로 처리
+            let editor = PickerCropConfig(circle: crop.circle, ratio: [], defaultRatio: nil, freeStyle: crop.freeStyle, isSquare: crop.isSquare)
             cameraConfig.editor = setCropConfig(editor)
         } else {
             cameraConfig.allowsEditing = false
