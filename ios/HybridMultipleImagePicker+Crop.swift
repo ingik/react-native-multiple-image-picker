@@ -65,15 +65,38 @@ extension HybridMultipleImagePicker {
             // isSquare가 nil인 경우 - 모든 비율 선택 가능
             config.isFixedCropSizeState = false
             config.cropSize.isFixedRatio = false
-            // 기본 비율들 제공
-            config.cropSize.aspectRatios = [
-                .init(title: "원본", width: 0, height: 0),
-                .init(title: "1:1", width: 1, height: 1),
-                .init(title: "3:4", width: 3, height: 4),
-                .init(title: "4:3", width: 4, height: 3),
-                .init(title: "9:16", width: 9, height: 16),
-                .init(title: "16:9", width: 16, height: 9)
-            ]
+            // 기본 비율들 제공 - EditorRatioToolConfig 타입으로 명시적 생성
+            let originalRatio = EditorRatioToolConfig()
+            originalRatio.title = "원본"
+            originalRatio.width = 0
+            originalRatio.height = 0
+            
+            let ratio1x1 = EditorRatioToolConfig()
+            ratio1x1.title = "1:1"
+            ratio1x1.width = 1
+            ratio1x1.height = 1
+            
+            let ratio3x4 = EditorRatioToolConfig()
+            ratio3x4.title = "3:4"
+            ratio3x4.width = 3
+            ratio3x4.height = 4
+            
+            let ratio4x3 = EditorRatioToolConfig()
+            ratio4x3.title = "4:3"
+            ratio4x3.width = 4
+            ratio4x3.height = 3
+            
+            let ratio9x16 = EditorRatioToolConfig()
+            ratio9x16.title = "9:16"
+            ratio9x16.width = 9
+            ratio9x16.height = 16
+            
+            let ratio16x9 = EditorRatioToolConfig()
+            ratio16x9.title = "16:9"
+            ratio16x9.width = 16
+            ratio16x9.height = 9
+            
+            config.cropSize.aspectRatios = [originalRatio, ratio1x1, ratio3x4, ratio4x3, ratio9x16, ratio16x9]
         }
 
         // 기본 편집 설정
