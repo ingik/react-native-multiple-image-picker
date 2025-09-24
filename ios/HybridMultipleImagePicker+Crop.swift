@@ -25,7 +25,15 @@ extension HybridMultipleImagePicker {
             asset = .init(type: .photoAsset(.init(localIdentifier: image)))
         }
 
-        let cropOption = PickerCropConfig(circle: config.circle, ratio: config.ratio, defaultRatio: config.defaultRatio, freeStyle: config.freeStyle, isSquare: config.isSquare)
+        // CropRatio 객체들을 안전하게 처리
+        let ratioArray: [CropRatio] = config.ratio.map { ratio in
+            return CropRatio(title: ratio.title, width: ratio.width, height: ratio.height)
+        }
+        
+        let defaultRatio: CropRatio? = config.defaultRatio != nil ? 
+            CropRatio(title: config.defaultRatio!.title, width: config.defaultRatio!.width, height: config.defaultRatio!.height) : nil
+        
+        let cropOption = PickerCropConfig(circle: config.circle, ratio: ratioArray, defaultRatio: defaultRatio, freeStyle: config.freeStyle, isSquare: config.isSquare)
 
         var editConfig = setCropConfig(cropOption)
 
