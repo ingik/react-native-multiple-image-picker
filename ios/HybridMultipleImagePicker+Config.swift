@@ -116,8 +116,13 @@ extension HybridMultipleImagePicker {
         if let crop = options.crop {
             config.editor = setCropConfig(crop)
         } else {
-            previewView.bottomView.isHiddenEditButton = true
+            // 기본 크롭 설정으로 편집 버튼 활성화 (isSquare = nil로 전체 비율 선택 가능)
+            let defaultCrop = PickerCropConfig(circle: false, ratio: [], defaultRatio: nil, freeStyle: false, isSquare: nil)
+            config.editor = setCropConfig(defaultCrop)
         }
+        
+        // 편집 버튼 항상 표시
+        previewView.bottomView.isHiddenEditButton = false
 
         photoList.finishSelectionAfterTakingPhoto = true
 
