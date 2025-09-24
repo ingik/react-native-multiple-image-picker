@@ -25,7 +25,7 @@ extension HybridMultipleImagePicker {
             asset = .init(type: .photoAsset(.init(localIdentifier: image)))
         }
 
-        let cropOption = PickerCropConfig(circle: config.circle, ratio: config.ratio, defaultRatio: config.defaultRatio, freeStyle: config.freeStyle, isSquare: config.isSquare)
+        let cropOption = PickerCropConfig(circle: config.circle, ratio: config.ratio, defaultRatio: config.defaultRatio, freeStyle: config.freeStyle)
 
         var editConfig = setCropConfig(cropOption)
 
@@ -46,14 +46,8 @@ extension HybridMultipleImagePicker {
     func setCropConfig(_ cropConfig: PickerCropConfig) -> EditorConfiguration {
         var config = EditorConfiguration()
 
-        // isSquare 옵션에 따라 비율 설정
-        if cropConfig.isSquare == true {
-            // 1:1 비율로 강제 설정
-            config.cropSize.aspectRatio = .init(width: 1, height: 1)
-        } else {
-            // 1:1.25 비율로 강제 설정
-            config.cropSize.aspectRatio = .init(width: 1, height: 1.25)
-        }
+        // 1:1.25 비율로 강제 설정
+        config.cropSize.aspectRatio = .init(width: 1, height: 1.25)
 
         config.photo.defaultSelectedToolOption = .cropSize
 
@@ -74,7 +68,7 @@ extension HybridMultipleImagePicker {
 
         config.photo.defaultSelectedToolOption = .cropSize
 
-        // 비율 선택 UI 완전히 숨기기 (설정된 비율만 사용)
+        // 비율 선택 UI 완전히 숨기기 (1:1.25만 사용)
         config.cropSize.aspectRatios = []
 
         return config

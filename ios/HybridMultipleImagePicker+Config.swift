@@ -116,13 +116,8 @@ extension HybridMultipleImagePicker {
         if let crop = options.crop {
             config.editor = setCropConfig(crop)
         } else {
-            // 기본 크롭 설정으로 편집 버튼 활성화
-            let defaultCrop = PickerCropConfig(circle: false, ratio: [], defaultRatio: nil, freeStyle: false, isSquare: false)
-            config.editor = setCropConfig(defaultCrop)
+            previewView.bottomView.isHiddenEditButton = true
         }
-        
-        // 편집 버튼 항상 표시
-        previewView.bottomView.isHiddenEditButton = false
 
         photoList.finishSelectionAfterTakingPhoto = true
 
@@ -203,28 +198,6 @@ extension HybridMultipleImagePicker {
     }
 
     private func setLanguage(_ options: NitroConfig) {
-        // 한국어인 경우 자연스러운 텍스트 설정
-        if options.language == .ko {
-            // 기본 버튼 텍스트
-            config.textManager.picker.photoList.bottomView.finishTitle = .custom("완료")
-            config.textManager.picker.preview.bottomView.finishTitle = .custom("완료")
-            config.textManager.picker.photoList.bottomView.originalTitle = .custom("원본")
-            config.textManager.picker.preview.bottomView.originalTitle = .custom("원본")
-            config.textManager.picker.photoList.bottomView.previewTitle = .custom("미리보기")
-            config.textManager.picker.preview.bottomView.editTitle = .custom("편집")
-            
-            // 편집기 텍스트
-            config.textManager.editor.crop.maskListFinishTitle = .custom("완료")
-            
-            // 빈 화면 텍스트
-            config.textManager.picker.photoList.emptyTitle = .custom("사진이 없습니다")
-            config.textManager.picker.photoList.emptySubTitle = .custom("사진을 찍거나 다운로드해보세요")
-            
-            // 추가 텍스트 (존재하는 속성만 사용)
-            // config.textManager.picker.notAuthorized.titleText = .custom("사진 접근 권한이 필요합니다")
-            // config.textManager.picker.notAuthorized.subTitleText = .custom("설정에서 사진 접근 권한을 허용해주세요")
-        }
-        
         if let text = options.text {
             if let finish = text.finish {
                 config.textManager.picker.photoList.bottomView.finishTitle = .custom(finish)
