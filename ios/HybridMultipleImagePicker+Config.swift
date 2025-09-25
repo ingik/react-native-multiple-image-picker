@@ -203,24 +203,6 @@ extension HybridMultipleImagePicker {
     }
 
     private func setLanguage(_ options: NitroConfig) {
-        // 한국어인 경우 자연스러운 텍스트 설정
-        if options.language == .ko {
-            // 기본 버튼 텍스트 - TextType.custom으로 명시적 변환
-            config.textManager.picker.photoList.bottomView.finishTitle = HX.TextManager.TextType.custom("완료")
-            config.textManager.picker.preview.bottomView.finishTitle = HX.TextManager.TextType.custom("완료")
-            config.textManager.picker.photoList.bottomView.originalTitle = HX.TextManager.TextType.custom("원본")
-            config.textManager.picker.preview.bottomView.originalTitle = HX.TextManager.TextType.custom("원본")
-            config.textManager.picker.photoList.bottomView.previewTitle = HX.TextManager.TextType.custom("미리보기")
-            config.textManager.picker.preview.bottomView.editTitle = HX.TextManager.TextType.custom("편집")
-            
-            // 편집기 텍스트 - "취소 하 다", "절감" 같은 이상한 텍스트 수정
-            config.textManager.editor.crop.maskListFinishTitle = HX.TextManager.TextType.custom("완료")
-            config.textManager.editor.crop.cancelTitle = HX.TextManager.TextType.custom("취소")
-            
-            // 빈 화면 텍스트 (확실히 존재하는 속성만)
-            config.textManager.picker.photoList.emptyTitle = HX.TextManager.TextType.custom("사진이 없어요")
-            config.textManager.picker.photoList.emptySubTitle = HX.TextManager.TextType.custom("카메라로 사진을 찍어보세요")
-        }
         
         // 사용자 정의 텍스트가 있으면 우선 적용
         if let text = options.text {
