@@ -65,30 +65,46 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
 
                 self.selectedAssets = pickerResult.photoAssets
 
-                Task {
-                    for response in pickerResult.photoAssets {
-                        group.enter()
+                    Task {
+                        do {
+                            for response in pickerResult.photoAssets {
+                                group.enter()
 
-                        // HEIC/HEIF 파일이거나 크롭 설정이 있으면 자동 크롭 처리
-                        if self.shouldAutoCrop(response, config: config) {
-                            let croppedAsset = try await self.autoCropAsset(response, config: config)
-                            let resultData = try await self.getResult(croppedAsset)
-                            data.append(resultData)
-                        } else {
-                            let resultData = try await self.getResult(response)
-                            data.append(resultData)
-                        }
-                        
-                        group.leave()
-                    }
+                                // HEIC/HEIF 파일이거나 크롭 설정이 있으면 자동 크롭 처리
+                                if self.shouldAutoCrop(response, config: config) {
+                                    do {
+                                        let croppedAsset = try await self.autoCropAsset(response, config: config)
+                                        let resultData = try await self.getResult(croppedAsset)
+                                        data.append(resultData)
+                                    } catch {
+                                        // 자동 크롭 실패 시 원본 사용
+                                        let resultData = try await self.getResult(response)
+                                        data.append(resultData)
+                                    }
+                                } else {
+                                    let resultData = try await self.getResult(response)
+                                    data.append(resultData)
+                                }
+                                
+                                group.leave()
+                            }
 
-                    DispatchQueue.main.async {
-                        alert.dismiss(animated: true) {
-                            controller.dismiss(true)
-                            resolved(data)
+                            DispatchQueue.main.async {
+                                alert.dismiss(animated: true) {
+                                    controller.dismiss(true)
+                                    resolved(data)
+                                }
+                            }
+                        } catch {
+                            // 전체 작업 실패 시
+                            DispatchQueue.main.async {
+                                alert.dismiss(animated: true) {
+                                    controller.dismiss(true)
+                                    rejected(Double(ErrorCode.UNKNOWN.rawValue))
+                                }
+                            }
                         }
                     }
-                }
 
             } cancel: { cancel in
                 cancel.autoDismiss = true
@@ -116,20 +132,50 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
         return config.crop != nil || isHEIC
     }
     
-    // 자동 크롭 처리 - 단순화된 버전
+    // 자동 크롭 처리 - 안전한 버전
     private func autoCropAsset(_ asset: PhotoAsset, config: NitroConfig) async throws -> PhotoAsset {
         return try await withCheckedThrowingContinuation { continuation in
-            // 현재 설정된 에디터 설정 사용
-            let editorConfig = self.config.editor
-            
-            // 자동 크롭 실행 (백그라운드에서 자동 처리)
-            Photo.edit(asset: .init(type: .photoAsset(asset)), config: editorConfig) { editedResult, _ in
-                if let result = editedResult.result {
-                    asset.editedResult = .some(result)
-                    continuation.resume(returning: asset)
+            DispatchQueue.main.async {
+                // 기본 에디터 설정 생성 (안전한 설정)
+                var editorConfig = EditorConfiguration()
+                
+                // 크롭 설정이 있으면 적용, 없으면 원본 비율 유지
+                if let cropConfig = config.crop {
+                    if let isSquare = cropConfig.isSquare {
+                        if isSquare {
+                            // 1:1 비율
+                            editorConfig.cropSize.aspectRatio = .init(width: 1, height: 1)
+                        } else {
+                            // 1:1.25 비율 (4:5)
+                            editorConfig.cropSize.aspectRatio = .init(width: 4, height: 5)
+                        }
+                        editorConfig.isFixedCropSizeState = true
+                        editorConfig.cropSize.isFixedRatio = true
+                    } else {
+                        // 자유 크롭 또는 원본 비율 유지
+                        editorConfig.isFixedCropSizeState = false
+                        editorConfig.cropSize.isFixedRatio = false
+                    }
                 } else {
-                    // 크롭 실패 시 원본 반환
-                    continuation.resume(returning: asset)
+                    // HEIC/HEIF의 경우 원본 비율 유지
+                    editorConfig.isFixedCropSizeState = false
+                    editorConfig.cropSize.isFixedRatio = false
+                }
+                
+                // 기본 설정
+                editorConfig.photo.defaultSelectedToolOption = .cropSize
+                editorConfig.cropSize.isRoundCrop = false
+                editorConfig.cropSize.isResetToOriginal = true
+                
+                // 자동 크롭 실행
+                Photo.edit(asset: .init(type: .photoAsset(asset)), config: editorConfig) { editedResult, _ in
+                    if let result = editedResult.result {
+                        asset.editedResult = .some(result)
+                        continuation.resume(returning: asset)
+                    } else {
+                        // 크롭 실패 시 원본 반환
+                        continuation.resume(returning: asset)
+                    }
                 }
             }
         }
