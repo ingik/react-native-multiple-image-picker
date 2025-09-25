@@ -65,36 +65,50 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
 
                 self.selectedAssets = pickerResult.photoAssets
 
-                // HEIC/HEIF 파일이 있는지 체크
-                let heicAssets = pickerResult.photoAssets.filter { asset in
-                    if let phAsset = asset.phAsset {
-                        let resource = PHAssetResource.assetResources(for: phAsset).first
-                        let uti = resource?.uniformTypeIdentifier ?? ""
-                        return uti.contains("heic") || uti.contains("heif") || uti == "public.heic" || uti == "public.heif"
-                    }
-                    return false
-                }
+                // 모든 사진 파일을 크롭 처리 (crop 설정이 있을 때만)
+                let photoAssets = pickerResult.photoAssets.filter { $0.mediaType == .photo }
 
-                // 백그라운드에서 HEIC/HEIF 자동 변환 처리
-                Task {
-                    for response in pickerResult.photoAssets {
-                        group.enter()
+                // crop 설정이 있으면 모든 사진을 크롭으로 처리
+                if !photoAssets.isEmpty && config.crop != nil {
+                    Task {
+                        for response in pickerResult.photoAssets {
+                            group.enter()
 
-                        // HEIC/HEIF 파일이면 자동으로 크롭 처리 (JPEG 변환)
-                        if heicAssets.contains(response) {
-                            await self.autoConvertHEIC(response, config: config)
+                            // 사진 파일이면 자동으로 크롭 처리
+                            if photoAssets.contains(response) {
+                                await self.autoCropImage(response, config: config)
+                            }
+
+                            let resultData = try await self.getResult(response)
+                            data.append(resultData)
+                            
+                            group.leave()
                         }
 
-                        let resultData = try await self.getResult(response)
-                        data.append(resultData)
-                        
-                        group.leave()
+                        DispatchQueue.main.async {
+                            alert.dismiss(animated: true) {
+                                controller.dismiss(true)
+                                resolved(data)
+                            }
+                        }
                     }
+                } else {
+                    // crop 설정이 없으면 일반 처리
+                    Task {
+                        for response in pickerResult.photoAssets {
+                            group.enter()
 
-                    DispatchQueue.main.async {
-                        alert.dismiss(animated: true) {
-                            controller.dismiss(true)
-                            resolved(data)
+                            let resultData = try await self.getResult(response)
+                            data.append(resultData)
+                            
+                            group.leave()
+                        }
+
+                        DispatchQueue.main.async {
+                            alert.dismiss(animated: true) {
+                                controller.dismiss(true)
+                                resolved(data)
+                            }
                         }
                     }
                 }
@@ -105,8 +119,8 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
         }
     }
     
-    // HEIC/HEIF를 isSquare 설정에 맞춰 크롭하고 JPEG로 변환 (백그라운드 처리)
-    private func autoConvertHEIC(_ asset: PhotoAsset, config: NitroConfig) async {
+    // 모든 이미지를 isSquare 설정에 맞춰 크롭 처리 (백그라운드 처리)
+    private func autoCropImage(_ asset: PhotoAsset, config: NitroConfig) async {
         await withCheckedContinuation { continuation in
             DispatchQueue.main.async {
                 // isSquare 설정에 맞춘 크롭 설정
@@ -141,11 +155,13 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
                 ])
                 
                 // 백그라운드에서 자동 크롭 실행 (사용자에게 UI 안보임)
-                Photo.edit(asset: .init(type: .photoAsset(asset)), config: editConfig) { result, _ in
+                Photo.edit(asset: .init(type: .photoAsset(asset)), config: editConfig) { result, editedAsset in
+                    // 성공/실패 관계없이 항상 continuation resume
                     if let editedResult = result.result {
-                        // 편집된 결과를 asset에 저장 (JPEG로 변환됨)
+                        // 편집된 결과를 asset에 저장
                         asset.editedResult = .some(editedResult)
                     }
+                    // 취소하거나 실패해도 계속 진행
                     continuation.resume()
                 }
             }
