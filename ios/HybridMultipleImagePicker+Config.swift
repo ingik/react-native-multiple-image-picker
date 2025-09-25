@@ -95,35 +95,33 @@ extension HybridMultipleImagePicker {
 
         config.isSelectedOriginal = false
 
-        let isPreview = options.isPreview ?? true
+        // 미리보기 기능 강제 활성화
+        let isPreview = true  // 항상 true로 설정
 
         previewView.bottomView.isShowPreviewList = isPreview
-        photoList.bottomView.isHiddenPreviewButton = !isPreview
+        photoList.bottomView.isHiddenPreviewButton = false  // 미리보기 버튼 항상 표시
         photoList.allowHapticTouchPreview = isPreview
         photoList.bottomView.previewListTickColor = .clear
         photoList.bottomView.isShowSelectedView = isPreview
 
-        if isPreview {
-            config.videoSelectionTapAction = .preview
-            config.photoSelectionTapAction = .preview
-        } else {
-            config.videoSelectionTapAction = .quickSelect
-            config.photoSelectionTapAction = .quickSelect
-        }
+        // 미리보기 액션 활성화
+        config.videoSelectionTapAction = .preview
+        config.photoSelectionTapAction = .preview
 
-        // 편집 옵션 활성화 - 모든 미디어 타입에 대해 편집 허용
+        // 편집 옵션 항상 활성화 - 모든 미디어 타입에 대해 편집 허용
         config.editorOptions = [.photo, .gifPhoto, .livePhoto]
         
         // 편집 버튼을 항상 표시하도록 설정
         previewView.bottomView.isHiddenEditButton = false
         
-        // 편집 기능 활성화 - 간단하게
+        // 편집 기능 활성화 - crop 옵션이 없어도 기본 편집 제공
         if let crop = options.crop {
             let simpleCrop = PickerCropConfig(circle: crop.circle, ratio: [], defaultRatio: nil, freeStyle: crop.freeStyle, isSquare: crop.isSquare)
             config.editor = setCropConfig(simpleCrop)
         } else {
-            // 편집 비활성화
-            config.editorOptions = []
+            // crop 옵션이 없어도 기본 편집 기능 제공 (자유 크롭)
+            let defaultCrop = PickerCropConfig(circle: false, ratio: [], defaultRatio: nil, freeStyle: true, isSquare: nil)
+            config.editor = setCropConfig(defaultCrop)
         }
 
         photoList.finishSelectionAfterTakingPhoto = true

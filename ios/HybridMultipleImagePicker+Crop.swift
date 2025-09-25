@@ -47,7 +47,7 @@ extension HybridMultipleImagePicker {
     func setCropConfig(_ cropConfig: PickerCropConfig) -> EditorConfiguration {
         var config = EditorConfiguration()
 
-        // isSquare 옵션에 따라 간단하게 비율만 설정
+        // isSquare 옵션에 따라 비율 설정
         if let isSquare = cropConfig.isSquare {
             if isSquare {
                 // 1:1 비율 고정
@@ -59,11 +59,23 @@ extension HybridMultipleImagePicker {
             // 비율 고정 설정
             config.isFixedCropSizeState = true
             config.cropSize.isFixedRatio = true
+        } else if cropConfig.freeStyle == true {
+            // 자유 크롭 모드
+            config.isFixedCropSizeState = false
+            config.cropSize.isFixedRatio = false
+        } else {
+            // 기본 자유 크롭
+            config.isFixedCropSizeState = false
+            config.cropSize.isFixedRatio = false
         }
 
         // 기본 설정
         config.photo.defaultSelectedToolOption = .cropSize
         config.cropSize.isRoundCrop = cropConfig.circle ?? false
+        config.cropSize.isResetToOriginal = true
+        config.isWhetherFinishButtonDisabledInUneditedState = false
+        
+        // 크롭 도구 활성화
         config.toolsView = .init(toolOptions: [
             .init(imageType: PickerConfiguration.default.editor.imageResource.editor.tools.cropSize, type: .cropSize)
         ])
