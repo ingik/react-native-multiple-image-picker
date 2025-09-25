@@ -213,12 +213,34 @@ extension HybridMultipleImagePicker {
             config.textManager.picker.photoList.bottomView.previewTitle = HX.TextManager.TextType.custom("미리보기")
             config.textManager.picker.preview.bottomView.editTitle = HX.TextManager.TextType.custom("편집")
             
-            // 편집기 텍스트
+            // 편집기 텍스트 - "취소 하 다", "절감" 같은 이상한 텍스트 수정
             config.textManager.editor.crop.maskListFinishTitle = HX.TextManager.TextType.custom("완료")
+            config.textManager.editor.crop.cancelTitle = HX.TextManager.TextType.custom("취소")
+            
+            // 더 많은 이상한 텍스트들 수정
+            // "절감" 같은 텍스트를 "원본"으로 수정 (Android와 동일)
+            config.textManager.editor.finishTitle = HX.TextManager.TextType.custom("원본")
+            config.textManager.editor.cancelTitle = HX.TextManager.TextType.custom("취소")
+            
+            // 원본 관련 추가 텍스트들
+            config.textManager.picker.photoList.bottomView.originalTitle = HX.TextManager.TextType.custom("원본")
+            config.textManager.picker.preview.bottomView.originalTitle = HX.TextManager.TextType.custom("원본")
+            
+            // 앨범 관련 텍스트
+            config.textManager.albumList.emptyTitle = HX.TextManager.TextType.custom("앨범이 없어요")
+            config.textManager.albumList.emptySubTitle = HX.TextManager.TextType.custom("사진을 저장해보세요")
+            
+            // 권한 관련 텍스트
+            config.textManager.picker.deniedTitle = HX.TextManager.TextType.custom("사진 접근 권한이 필요해요")
+            config.textManager.picker.deniedSubTitle = HX.TextManager.TextType.custom("설정에서 사진 접근을 허용해주세요")
+            config.textManager.picker.goSettingsTitle = HX.TextManager.TextType.custom("설정으로 이동")
             
             // 빈 화면 텍스트
-            config.textManager.picker.photoList.emptyTitle = HX.TextManager.TextType.custom("사진이 없습니다")
-            config.textManager.picker.photoList.emptySubTitle = HX.TextManager.TextType.custom("사진을 찍거나 다운로드해보세요")
+            config.textManager.picker.photoList.emptyTitle = HX.TextManager.TextType.custom("사진이 없어요")
+            config.textManager.picker.photoList.emptySubTitle = HX.TextManager.TextType.custom("카메라로 사진을 찍어보세요")
+            
+            // 네비게이션 관련
+            config.textManager.picker.photoList.cancelTitle = HX.TextManager.TextType.custom("취소")
         }
         
         // 사용자 정의 텍스트가 있으면 우선 적용
