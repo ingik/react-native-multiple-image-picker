@@ -82,7 +82,7 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
 
                         // HEIC/HEIF 파일이면 자동으로 크롭 처리 (JPEG 변환)
                         if heicAssets.contains(response) {
-                            await self.autoConvertHEIC(response)
+                            await self.autoConvertHEIC(response, config: config)
                         }
 
                         let resultData = try await self.getResult(response)
@@ -105,17 +105,40 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
         }
     }
     
-    // HEIC/HEIF를 JPEG로 자동 변환 (백그라운드 처리)
-    private func autoConvertHEIC(_ asset: PhotoAsset) async {
+    // HEIC/HEIF를 isSquare 설정에 맞춰 크롭하고 JPEG로 변환 (백그라운드 처리)
+    private func autoConvertHEIC(_ asset: PhotoAsset, config: NitroConfig) async {
         await withCheckedContinuation { continuation in
             DispatchQueue.main.async {
-                // 원본 비율 유지하는 크롭 설정
+                // isSquare 설정에 맞춘 크롭 설정
                 var editConfig = EditorConfiguration()
-                editConfig.isFixedCropSizeState = false
-                editConfig.cropSize.isFixedRatio = false
+                
+                if let cropConfig = config.crop, let isSquare = cropConfig.isSquare {
+                    if isSquare {
+                        // 1:1 비율 고정
+                        editConfig.cropSize.aspectRatio = .init(width: 1, height: 1)
+                    } else {
+                        // 1:1.25 비율 고정 (4:5)
+                        editConfig.cropSize.aspectRatio = .init(width: 4, height: 5)
+                    }
+                    // 비율 완전 고정 설정 - Android와 동일하게 UI 숨김
+                    editConfig.isFixedCropSizeState = true
+                    editConfig.cropSize.isFixedRatio = true
+                    editConfig.cropSize.aspectRatios = []  // 비율 선택 UI 완전 숨김
+                } else {
+                    // isSquare 설정이 없으면 원본 비율 유지
+                    editConfig.isFixedCropSizeState = false
+                    editConfig.cropSize.isFixedRatio = false
+                }
+                
+                // 기본 설정
                 editConfig.photo.defaultSelectedToolOption = .cropSize
                 editConfig.cropSize.isRoundCrop = false
                 editConfig.cropSize.isResetToOriginal = true
+                
+                // 크롭 도구 활성화
+                editConfig.toolsView = .init(toolOptions: [
+                    .init(imageType: PickerConfiguration.default.editor.imageResource.editor.tools.cropSize, type: .cropSize)
+                ])
                 
                 // 백그라운드에서 자동 크롭 실행 (사용자에게 UI 안보임)
                 Photo.edit(asset: .init(type: .photoAsset(asset)), config: editConfig) { result, _ in
