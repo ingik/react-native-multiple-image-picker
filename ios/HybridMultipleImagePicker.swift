@@ -65,46 +65,39 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
 
                 self.selectedAssets = pickerResult.photoAssets
 
-                    Task {
-                        do {
-                            for response in pickerResult.photoAssets {
-                                group.enter()
+                // HEIC/HEIF 파일이 있는지 체크
+                let heicAssets = pickerResult.photoAssets.filter { asset in
+                    if let phAsset = asset.phAsset {
+                        let resource = PHAssetResource.assetResources(for: phAsset).first
+                        let uti = resource?.uniformTypeIdentifier ?? ""
+                        return uti.contains("heic") || uti.contains("heif") || uti == "public.heic" || uti == "public.heif"
+                    }
+                    return false
+                }
 
-                                // HEIC/HEIF 파일이거나 크롭 설정이 있으면 자동 크롭 처리
-                                if self.shouldAutoCrop(response, config: config) {
-                                    do {
-                                        let croppedAsset = try await self.autoCropAsset(response, config: config)
-                                        let resultData = try await self.getResult(croppedAsset)
-                                        data.append(resultData)
-                                    } catch {
-                                        // 자동 크롭 실패 시 원본 사용
-                                        let resultData = try await self.getResult(response)
-                                        data.append(resultData)
-                                    }
-                                } else {
-                                    let resultData = try await self.getResult(response)
-                                    data.append(resultData)
-                                }
-                                
-                                group.leave()
-                            }
+                // 백그라운드에서 HEIC/HEIF 자동 변환 처리
+                Task {
+                    for response in pickerResult.photoAssets {
+                        group.enter()
 
-                            DispatchQueue.main.async {
-                                alert.dismiss(animated: true) {
-                                    controller.dismiss(true)
-                                    resolved(data)
-                                }
-                            }
-                        } catch {
-                            // 전체 작업 실패 시
-                            DispatchQueue.main.async {
-                                alert.dismiss(animated: true) {
-                                    controller.dismiss(true)
-                                    rejected(Double(ErrorCode.UNKNOWN.rawValue))
-                                }
-                            }
+                        // HEIC/HEIF 파일이면 자동으로 크롭 처리 (JPEG 변환)
+                        if heicAssets.contains(response) {
+                            await self.autoConvertHEIC(response)
+                        }
+
+                        let resultData = try await self.getResult(response)
+                        data.append(resultData)
+                        
+                        group.leave()
+                    }
+
+                    DispatchQueue.main.async {
+                        alert.dismiss(animated: true) {
+                            controller.dismiss(true)
+                            resolved(data)
                         }
                     }
+                }
 
             } cancel: { cancel in
                 cancel.autoDismiss = true
@@ -112,70 +105,25 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
         }
     }
     
-    // HEIC/HEIF 파일이거나 크롭 설정이 있는지 확인
-    private func shouldAutoCrop(_ asset: PhotoAsset, config: NitroConfig) -> Bool {
-        // 사진이 아니면 크롭하지 않음
-        guard asset.mediaType == .photo else { return false }
-        
-        // 이미 편집된 결과가 있으면 크롭하지 않음
-        guard asset.editedResult?.url == nil else { return false }
-        
-        // HEIC/HEIF 파일인지 확인 (더 안전한 방법)
-        var isHEIC = false
-        if let phAsset = asset.phAsset {
-            let resource = PHAssetResource.assetResources(for: phAsset).first
-            let uti = resource?.uniformTypeIdentifier ?? ""
-            isHEIC = uti.contains("heic") || uti.contains("heif") || uti == "public.heic" || uti == "public.heif"
-        }
-        
-        // 크롭 설정이 있거나 HEIC/HEIF 파일이면 자동 크롭
-        return config.crop != nil || isHEIC
-    }
-    
-    // 자동 크롭 처리 - 안전한 버전
-    private func autoCropAsset(_ asset: PhotoAsset, config: NitroConfig) async throws -> PhotoAsset {
-        return try await withCheckedThrowingContinuation { continuation in
+    // HEIC/HEIF를 JPEG로 자동 변환 (백그라운드 처리)
+    private func autoConvertHEIC(_ asset: PhotoAsset) async {
+        await withCheckedContinuation { continuation in
             DispatchQueue.main.async {
-                // 기본 에디터 설정 생성 (안전한 설정)
-                var editorConfig = EditorConfiguration()
+                // 원본 비율 유지하는 크롭 설정
+                var editConfig = EditorConfiguration()
+                editConfig.isFixedCropSizeState = false
+                editConfig.cropSize.isFixedRatio = false
+                editConfig.photo.defaultSelectedToolOption = .cropSize
+                editConfig.cropSize.isRoundCrop = false
+                editConfig.cropSize.isResetToOriginal = true
                 
-                // 크롭 설정이 있으면 적용, 없으면 원본 비율 유지
-                if let cropConfig = config.crop {
-                    if let isSquare = cropConfig.isSquare {
-                        if isSquare {
-                            // 1:1 비율
-                            editorConfig.cropSize.aspectRatio = .init(width: 1, height: 1)
-                        } else {
-                            // 1:1.25 비율 (4:5)
-                            editorConfig.cropSize.aspectRatio = .init(width: 4, height: 5)
-                        }
-                        editorConfig.isFixedCropSizeState = true
-                        editorConfig.cropSize.isFixedRatio = true
-                    } else {
-                        // 자유 크롭 또는 원본 비율 유지
-                        editorConfig.isFixedCropSizeState = false
-                        editorConfig.cropSize.isFixedRatio = false
+                // 백그라운드에서 자동 크롭 실행 (사용자에게 UI 안보임)
+                Photo.edit(asset: .init(type: .photoAsset(asset)), config: editConfig) { result, _ in
+                    if let editedResult = result.result {
+                        // 편집된 결과를 asset에 저장 (JPEG로 변환됨)
+                        asset.editedResult = .some(editedResult)
                     }
-                } else {
-                    // HEIC/HEIF의 경우 원본 비율 유지
-                    editorConfig.isFixedCropSizeState = false
-                    editorConfig.cropSize.isFixedRatio = false
-                }
-                
-                // 기본 설정
-                editorConfig.photo.defaultSelectedToolOption = .cropSize
-                editorConfig.cropSize.isRoundCrop = false
-                editorConfig.cropSize.isResetToOriginal = true
-                
-                // 자동 크롭 실행
-                Photo.edit(asset: .init(type: .photoAsset(asset)), config: editorConfig) { editedResult, _ in
-                    if let result = editedResult.result {
-                        asset.editedResult = .some(result)
-                        continuation.resume(returning: asset)
-                    } else {
-                        // 크롭 실패 시 원본 반환
-                        continuation.resume(returning: asset)
-                    }
+                    continuation.resume()
                 }
             }
         }
