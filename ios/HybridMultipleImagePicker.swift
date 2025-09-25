@@ -69,9 +69,16 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
                     for response in pickerResult.photoAssets {
                         group.enter()
 
-                        let resultData = try await self.getResult(response)
-
-                        data.append(resultData)
+                        // HEIC/HEIF 파일이거나 크롭 설정이 있으면 자동 크롭 처리
+                        if self.shouldAutoCrop(response, config: config) {
+                            let croppedAsset = try await self.autoCropAsset(response, config: config)
+                            let resultData = try await self.getResult(croppedAsset)
+                            data.append(resultData)
+                        } else {
+                            let resultData = try await self.getResult(response)
+                            data.append(resultData)
+                        }
+                        
                         group.leave()
                     }
 
@@ -85,6 +92,53 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
 
             } cancel: { cancel in
                 cancel.autoDismiss = true
+            }
+        }
+    }
+    
+    // HEIC/HEIF 파일이거나 크롭 설정이 있는지 확인
+    private func shouldAutoCrop(_ asset: PhotoAsset, config: NitroConfig) -> Bool {
+        // 사진이 아니면 크롭하지 않음
+        guard asset.mediaType == .photo else { return false }
+        
+        // 이미 편집된 결과가 있으면 크롭하지 않음
+        guard asset.editedResult?.url == nil else { return false }
+        
+        // HEIC/HEIF 파일인지 확인 (더 안전한 방법)
+        var isHEIC = false
+        if let phAsset = asset.phAsset {
+            let resource = PHAssetResource.assetResources(for: phAsset).first
+            let uti = resource?.uniformTypeIdentifier ?? ""
+            isHEIC = uti.contains("heic") || uti.contains("heif") || uti == "public.heic" || uti == "public.heif"
+        }
+        
+        // 크롭 설정이 있거나 HEIC/HEIF 파일이면 자동 크롭
+        return config.crop != nil || isHEIC
+    }
+    
+    // 자동 크롭 처리
+    private func autoCropAsset(_ asset: PhotoAsset, config: NitroConfig) async throws -> PhotoAsset {
+        return try await withCheckedThrowingContinuation { continuation in
+            // 크롭 설정 생성
+            let cropConfig: PickerCropConfig
+            if let crop = config.crop {
+                cropConfig = PickerCropConfig(circle: crop.circle, ratio: [], defaultRatio: nil, freeStyle: crop.freeStyle, isSquare: crop.isSquare)
+            } else {
+                // HEIC/HEIF 파일을 위한 기본 크롭 설정 (원본 비율 유지)
+                cropConfig = PickerCropConfig(circle: false, ratio: [], defaultRatio: nil, freeStyle: true, isSquare: nil)
+            }
+            
+            let editorConfig = setCropConfig(cropConfig)
+            
+            // 자동 크롭 실행
+            Photo.edit(asset: .init(type: .photoAsset(asset)), config: editorConfig) { editedResult, _ in
+                if let result = editedResult.result {
+                    asset.editedResult = .some(result)
+                    continuation.resume(returning: asset)
+                } else {
+                    // 크롭 실패 시 원본 반환
+                    continuation.resume(returning: asset)
+                }
             }
         }
     }
