@@ -60,7 +60,6 @@ extension HybridMultipleImagePicker {
             config.isFixedCropSizeState = true
             config.cropSize.isFixedRatio = true
             config.cropSize.aspectRatios = []  // 비율 선택 UI 완전 숨김
-            config.cropSize.isShowRatioToolBar = false  // 비율 툴바 숨김
         } else if cropConfig.freeStyle == true {
             // 자유 크롭 모드
             config.isFixedCropSizeState = false
