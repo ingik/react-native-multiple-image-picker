@@ -32,36 +32,6 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
 
                 controller.autoDismiss = false
 
-                // 자동 크롭: 모든 이미지에 대해 isSquare 비율로 자동 크롭 적용
-                let imageAssets = pickerResult.photoAssets.filter { $0.mediaType == .photo && $0.editedResult?.url == nil }
-                
-                if !imageAssets.isEmpty {
-                    // 자동 크롭 설정 생성 (isSquare 설정에 따라 비율 결정)
-                    var autoCropConfig = self.config.editor
-                    
-                    // isSquare 설정에 따라 비율 설정
-                    if let isSquare = config.crop?.isSquare {
-                        if isSquare {
-                            // 1:1 비율 고정
-                            autoCropConfig.cropSize.aspectRatio = .init(width: 1, height: 1)
-                        } else {
-                            // 4:5 비율 고정 (1:1.25)
-                            autoCropConfig.cropSize.aspectRatio = .init(width: 4, height: 5)
-                        }
-                    } else {
-                        // 기본값: 1:1 비율
-                        autoCropConfig.cropSize.aspectRatio = .init(width: 1, height: 1)
-                    }
-                    
-                    autoCropConfig.isFixedCropSizeState = true
-                    autoCropConfig.cropSize.isFixedRatio = true
-                    autoCropConfig.cropSize.aspectRatios = []
-                    
-                    // 첫 번째 이미지부터 순차적으로 크롭 처리
-                    self.processAutoCrop(assets: imageAssets, config: autoCropConfig, controller: controller, resolved: resolved)
-                    return
-                }
-
                 // show alert view
                 let alert = UIAlertController(title: nil, message: "Loading...", preferredStyle: .alert)
                 alert.showLoading()
@@ -77,8 +47,21 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
                     for response in pickerResult.photoAssets {
                         group.enter()
 
-                        let resultData = try await self.getResult(response)
-                        data.append(resultData)
+                        // 이미지인 경우 자동 크롭 적용
+                        if response.mediaType == .photo && response.editedResult?.url == nil {
+                            if let croppedAsset = try await self.programmaticCrop(asset: response) {
+                                let resultData = try await self.getResult(croppedAsset)
+                                data.append(resultData)
+                            } else {
+                                // 크롭 실패 시 원본 사용
+                                let resultData = try await self.getResult(response)
+                                data.append(resultData)
+                            }
+                        } else {
+                            // 비디오이거나 이미 편집된 경우 원본 사용
+                            let resultData = try await self.getResult(response)
+                            data.append(resultData)
+                        }
                         
                         group.leave()
                     }
@@ -97,42 +80,9 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
         }
     }
     
-    // 모든 이미지를 자동으로 프로그래매틱하게 크롭하는 메서드 (UI 없이)
-    private func processAutoCrop(assets: [PhotoAsset], config: EditorConfiguration, controller: PhotoPickerController, resolved: @escaping (([PickerResult]) -> Void)) {
-        Task {
-            var processedAssets: [PhotoAsset] = []
-            
-            for asset in assets {
-                do {
-                    // 프로그래매틱하게 크롭 처리 (UI 없이)
-                    if let croppedAsset = try await self.programmaticCrop(asset: asset, config: config) {
-                        processedAssets.append(croppedAsset)
-                    } else {
-                        // 크롭 실패 시 원본 에셋 그대로 추가
-                        processedAssets.append(asset)
-                    }
-                } catch {
-                    // 에러 발생 시 원본 에셋 그대로 추가
-                    processedAssets.append(asset)
-                }
-            }
-            
-            // 결과 처리
-            var data: [PickerResult] = []
-            for asset in processedAssets {
-                let resultData = try await self.getResult(asset)
-                data.append(resultData)
-            }
-            
-            DispatchQueue.main.async {
-                controller.dismiss(true)
-                resolved(data)
-            }
-        }
-    }
     
     // 프로그래매틱하게 이미지를 크롭하는 메서드 (Core Image 사용)
-    private func programmaticCrop(asset: PhotoAsset, config: EditorConfiguration) async throws -> PhotoAsset? {
+    private func programmaticCrop(asset: PhotoAsset) async throws -> PhotoAsset? {
         return try await withCheckedThrowingContinuation { continuation in
             Task {
                 do {
@@ -147,8 +97,8 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
                         return
                     }
                     
-                    // 크롭 비율 가져오기
-                    let aspectRatio = config.cropSize.aspectRatio
+                    // 크롭 비율 가져오기 (클래스의 config 사용)
+                    let aspectRatio = self.config.editor.cropSize.aspectRatio
                     
                     // 프로그래매틱하게 크롭
                     guard let croppedImage = self.cropImage(image, to: aspectRatio) else {
