@@ -97,45 +97,118 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
         }
     }
     
-    // 모든 이미지를 자동으로 1:1 비율로 크롭하는 메서드
+    // 모든 이미지를 자동으로 프로그래매틱하게 크롭하는 메서드 (UI 없이)
     private func processAutoCrop(assets: [PhotoAsset], config: EditorConfiguration, controller: PhotoPickerController, resolved: @escaping (([PickerResult]) -> Void)) {
-        var remainingAssets = assets
-        var processedAssets: [PhotoAsset] = []
-        
-        func processNextAsset() {
-            guard let currentAsset = remainingAssets.first else {
-                // 모든 에셋 처리 완료
-                Task {
-                    var data: [PickerResult] = []
-                    for asset in processedAssets {
-                        let resultData = try await self.getResult(asset)
-                        data.append(resultData)
+        Task {
+            var processedAssets: [PhotoAsset] = []
+            
+            for asset in assets {
+                do {
+                    // 프로그래매틱하게 크롭 처리 (UI 없이)
+                    if let croppedAsset = try await self.programmaticCrop(asset: asset, config: config) {
+                        processedAssets.append(croppedAsset)
+                    } else {
+                        // 크롭 실패 시 원본 에셋 그대로 추가
+                        processedAssets.append(asset)
                     }
-                    
-                    DispatchQueue.main.async {
-                        controller.dismiss(true)
-                        resolved(data)
-                    }
+                } catch {
+                    // 에러 발생 시 원본 에셋 그대로 추가
+                    processedAssets.append(asset)
                 }
-                return
             }
             
-            // 현재 에셋을 크롭 처리
-            Photo.edit(asset: .init(type: .photoAsset(currentAsset)), config: config) { editedResult, _ in
-                if let result = editedResult.result {
-                    currentAsset.editedResult = .some(result)
-                    processedAssets.append(currentAsset)
-                } else {
-                    // 크롭 실패 시 원본 에셋 그대로 추가
-                    processedAssets.append(currentAsset)
-                }
-                
-                remainingAssets.removeFirst()
-                processNextAsset()
+            // 결과 처리
+            var data: [PickerResult] = []
+            for asset in processedAssets {
+                let resultData = try await self.getResult(asset)
+                data.append(resultData)
+            }
+            
+            DispatchQueue.main.async {
+                controller.dismiss(true)
+                resolved(data)
             }
         }
+    }
+    
+    // 프로그래매틱하게 이미지를 크롭하는 메서드 (Core Image 사용)
+    private func programmaticCrop(asset: PhotoAsset, config: EditorConfiguration) async throws -> PhotoAsset? {
+        return try await withCheckedThrowingContinuation { continuation in
+            Task {
+                do {
+                    // 원본 이미지 URL 가져오기
+                    let urlResult = try await asset.urlResult()
+                    let imageURL = urlResult.url
+                    
+                    // URL에서 UIImage 생성
+                    guard let imageData = try? Data(contentsOf: imageURL),
+                          let image = UIImage(data: imageData) else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    
+                    // 크롭 비율 가져오기
+                    let aspectRatio = config.cropSize.aspectRatio
+                    
+                    // 프로그래매틱하게 크롭
+                    guard let croppedImage = self.cropImage(image, to: aspectRatio) else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    
+                    // 크롭된 이미지를 임시 파일로 저장
+                    let tempURL = self.saveImageToTempFile(croppedImage)
+                    
+                    // 새로운 PhotoAsset 생성 (크롭된 이미지) - 기존 패턴 사용
+                    let croppedAsset = PhotoAsset(.init(imageURL: tempURL))
+                    
+                    continuation.resume(returning: croppedAsset)
+                    
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+    
+    // UIImage를 지정된 비율로 크롭
+    private func cropImage(_ image: UIImage, to aspectRatio: CGSize) -> UIImage? {
+        let imageSize = image.size
         
-        processNextAsset()
+        // 비율 계산
+        let targetRatio = aspectRatio.width / aspectRatio.height
+        let imageRatio = imageSize.width / imageSize.height
+        
+        var cropRect: CGRect
+        
+        if targetRatio > imageRatio {
+            // 이미지가 더 세로로 긴 경우
+            let scaledWidth = imageSize.height * targetRatio
+            let x = (imageSize.width - scaledWidth) / 2
+            cropRect = CGRect(x: x, y: 0, width: scaledWidth, height: imageSize.height)
+        } else {
+            // 이미지가 더 가로로 긴 경우
+            let scaledHeight = imageSize.width / targetRatio
+            let y = (imageSize.height - scaledHeight) / 2
+            cropRect = CGRect(x: 0, y: y, width: imageSize.width, height: scaledHeight)
+        }
+        
+        // 이미지 크롭
+        guard let cgImage = image.cgImage?.cropping(to: cropRect) else { return nil }
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+    }
+    
+    // UIImage를 임시 파일로 저장
+    private func saveImageToTempFile(_ image: UIImage) -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = "cropped_\(UUID().uuidString).jpg"
+        let tempURL = tempDir.appendingPathComponent(fileName)
+        
+        if let imageData = image.jpegData(compressionQuality: 0.9) {
+            try? imageData.write(to: tempURL)
+        }
+        
+        return tempURL
     }
 }
 
