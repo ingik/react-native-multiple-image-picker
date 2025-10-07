@@ -9,7 +9,7 @@ import HXPhotoPicker
 // import Photos
 
 extension HybridMultipleImagePicker {
-    func getResult(_ asset: PhotoAsset) async throws -> PickerResult {
+    func getResult(_ asset: PhotoAsset, isCropped: Bool = false) async throws -> PickerResult {
         let urlResult = try await asset.urlResult()
         let url = urlResult.url
 
@@ -22,7 +22,10 @@ extension HybridMultipleImagePicker {
         let type: ResultType = .init(fromString: asset.mediaType == .video ? "video" : "image")!
         let thumbnail = asset.phAsset?.getVideoAssetThumbnail(from: url.absoluteString, in: 1)
 
-        return PickerResult(localIdentifier: phAsset!.localIdentifier,
+        // phAsset이 없는 경우 (임시 파일로 생성된 경우) URL을 localIdentifier로 사용
+        let localIdentifier = phAsset?.localIdentifier ?? url.lastPathComponent
+
+        return PickerResult(localIdentifier: localIdentifier,
                             width: asset.imageSize.width,
                             height: asset.imageSize.height,
                             mime: mime,
@@ -31,7 +34,7 @@ extension HybridMultipleImagePicker {
                             realPath: nil,
                             parentFolderName: nil,
                             creationDate: creationDate > 0 ? Double(creationDate) : nil,
-                            crop: false,
+                            crop: isCropped,
                             path: "file://\(url.absoluteString)",
                             type: type,
                             duration: asset.videoDuration,

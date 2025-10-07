@@ -50,16 +50,16 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
                         // 이미지인 경우 자동 크롭 적용
                         if response.mediaType == .photo && response.editedResult?.url == nil {
                             if let croppedAsset = try await self.programmaticCrop(asset: response) {
-                                let resultData = try await self.getResult(croppedAsset)
+                                let resultData = try await self.getResult(croppedAsset, isCropped: true)
                                 data.append(resultData)
                             } else {
                                 // 크롭 실패 시 원본 사용
-                                let resultData = try await self.getResult(response)
+                                let resultData = try await self.getResult(response, isCropped: false)
                                 data.append(resultData)
                             }
                         } else {
                             // 비디오이거나 이미 편집된 경우 원본 사용
-                            let resultData = try await self.getResult(response)
+                            let resultData = try await self.getResult(response, isCropped: false)
                             data.append(resultData)
                         }
                         
