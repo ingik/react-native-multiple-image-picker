@@ -123,7 +123,10 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
     
     // UIImage를 지정된 비율로 크롭
     private func cropImage(_ image: UIImage, to aspectRatio: CGSize) -> UIImage? {
-        let imageSize = image.size
+        // 먼저 이미지 orientation을 normalize (HEIC/HEIF orientation 문제 해결)
+        guard let normalizedImage = normalizeImageOrientation(image) else { return nil }
+        
+        let imageSize = normalizedImage.size
         
         // 비율 계산
         let targetRatio = aspectRatio.width / aspectRatio.height
@@ -144,8 +147,24 @@ class HybridMultipleImagePicker: HybridMultipleImagePickerSpec {
         }
         
         // 이미지 크롭
-        guard let cgImage = image.cgImage?.cropping(to: cropRect) else { return nil }
-        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+        guard let cgImage = normalizedImage.cgImage?.cropping(to: cropRect) else { return nil }
+        return UIImage(cgImage: cgImage, scale: normalizedImage.scale, orientation: .up)
+    }
+    
+    // UIImage의 orientation을 normalize (실제 픽셀로 회전)
+    private func normalizeImageOrientation(_ image: UIImage) -> UIImage? {
+        // orientation이 이미 .up이면 그대로 반환
+        if image.imageOrientation == .up {
+            return image
+        }
+        
+        // 새로운 컨텍스트에 올바른 orientation으로 이미지 그리기
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage
     }
     
     // UIImage를 임시 파일로 저장
