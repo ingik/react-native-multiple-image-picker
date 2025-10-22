@@ -422,11 +422,6 @@ class MultipleImagePickerImp(reactContext: ReactApplicationContext?) :
     }
 
     private fun setCropOption(config: PickerCropConfig?) {
-
-          cropOption.setShowCropFrame(false)      // 크롭 프레임 숨기기
-    // 하단 컨트롤 UI 숨기기
-    cropOption.setHideBottomControls(true)  // 하단 컨트롤 완전히 숨기기
-          
         cropOption.setShowCropFrame(true)
         cropOption.setShowCropGrid(true)
         cropOption.setCircleDimmedLayer(config?.circle ?: false)
@@ -440,19 +435,20 @@ class MultipleImagePickerImp(reactContext: ReactApplicationContext?) :
         cropOption.isDragCropImages(true)
         cropOption.setFreeStyleCropEnabled(config?.freeStyle ?: true)
         cropOption.setSkipCropMimeType(*getNotSupportCrop())
+        
+        // JPEG 압축 설정
+        cropOption.setCompressionQuality(90)
 
-
-      // isSquare 옵션에 따라 비율 설정
-      val aspectRatio = if (config?.isSquare == true) {
-          // 1:1 비율로 강제 설정
-          AspectRatio("1:1", 1f, 1f)
-      } else {
-          // 1:1.25 비율로 강제 설정
-          AspectRatio("1:1.25", 1f, 1.25f)
-      }
-      // 단일 비율만 설정하여 UI 숨기기
-      cropOption.setAspectRatioOptions(0, aspectRatio)
-       
+        // isSquare 옵션에 따라 비율 설정
+        val aspectRatio = if (config?.isSquare == true) {
+            // 1:1 비율로 강제 설정
+            AspectRatio("1:1", 1f, 1f)
+        } else {
+            // 1:1.25 비율로 강제 설정
+            AspectRatio("1:1.25", 1f, 1.25f)
+        }
+        // 단일 비율만 설정하여 UI 숨기기
+        cropOption.setAspectRatioOptions(0, aspectRatio)
     }
 
 
