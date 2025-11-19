@@ -49,7 +49,10 @@ See more [**Installation**](https://nitrogenzlab.github.io/react-native-multiple
 
 For Android 15+ devices that use 16KB memory pages, additional configuration is required:
 
-1. This package already includes 16KB page size support in `android/CMakeLists.txt`
+1. This package includes 16KB page size support:
+   - Native library support in `android/CMakeLists.txt`
+   - Updated PictureSelector to v3.11.3 for better 16KB compatibility
+   - Gradle configurations for proper JNI packaging
 
 2. **Important**: You also need to configure `react-native-nitro-modules`:
    - Navigate to `node_modules/react-native-nitro-modules/android`
@@ -59,6 +62,12 @@ For Android 15+ devices that use 16KB memory pages, additional configuration is 
      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-z,max-page-size=16384")
      ```
    - Delete the `.cxx` directory in both packages for a clean build
+
+3. **Known Issue**: If `libimage_processing_util_jni.so` still shows 16KB warnings, you may need to exclude the compress library by modifying `android/build.gradle`:
+   ```gradle
+   // Comment out or remove the compress library if not needed
+   // implementation 'io.github.lucksiege:compress:v3.11.3'
+   ```
 
 This ensures compatibility with devices like Pixel 9 series and other Android 15+ devices using 16KB page size.
 
@@ -117,6 +126,7 @@ const onPicker = async () => {
 [BuyMeACoffee-URL]: https://buymeacoffee.com/baronha
 [Kofi]: https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white
 [Kofi-URL]: https://ko-fi.com/baoha
+
 To keep this library maintained and up-to-date please consider [sponsoring it on GitHub](https://github.com/sponsors/baronha). Or if you are looking for a private support or help in customizing the experience, then reach out to me on Twitter [@\_baronha](https://twitter.com/_baronha).<br/>
 Besides, I also built a product using HXPhotoPicker here, Hope you support:<br/>
 
