@@ -27,3 +27,7 @@ target_link_libraries(
         ${LOG_LIB}
         android                                   # <-- Android core
 )
+
+# Support for 16KB page size (Android 15+)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,max-page-size=16384")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-z,max-page-size=16384")
