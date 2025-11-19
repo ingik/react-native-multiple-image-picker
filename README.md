@@ -45,6 +45,23 @@ View Nitro Modules' requirements [here](https://nitro.margelo.com/docs/minimum-r
 
 See more [**Installation**](https://nitrogenzlab.github.io/react-native-multiple-image-picker/getting-started)
 
+### Android 15+ 16KB Page Size Support
+
+For Android 15+ devices that use 16KB memory pages, additional configuration is required:
+
+1. This package already includes 16KB page size support in `android/CMakeLists.txt`
+
+2. **Important**: You also need to configure `react-native-nitro-modules`:
+   - Navigate to `node_modules/react-native-nitro-modules/android`
+   - Open `CMakeLists.txt` and add these lines at the end:
+     ```cmake
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,max-page-size=16384")
+     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-z,max-page-size=16384")
+     ```
+   - Delete the `.cxx` directory in both packages for a clean build
+
+This ensures compatibility with devices like Pixel 9 series and other Android 15+ devices using 16KB page size.
+
 ## Usage
 
 Here is a simple usage of the Multiple Image Picker. <br/>
