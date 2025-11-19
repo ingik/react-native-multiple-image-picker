@@ -50,11 +50,12 @@ See more [**Installation**](https://nitrogenzlab.github.io/react-native-multiple
 For Android 15+ devices that use 16KB memory pages, additional configuration is required:
 
 1. This package includes 16KB page size support:
+
    - Native library support in `android/CMakeLists.txt`
-   - Updated PictureSelector to v3.11.3 for better 16KB compatibility
    - Gradle configurations for proper JNI packaging
 
 2. **Important**: You also need to configure `react-native-nitro-modules`:
+
    - Navigate to `node_modules/react-native-nitro-modules/android`
    - Open `CMakeLists.txt` and add these lines at the end:
      ```cmake
@@ -63,11 +64,13 @@ For Android 15+ devices that use 16KB memory pages, additional configuration is 
      ```
    - Delete the `.cxx` directory in both packages for a clean build
 
-3. **Known Issue**: If `libimage_processing_util_jni.so` still shows 16KB warnings, you may need to exclude the compress library by modifying `android/build.gradle`:
-   ```gradle
-   // Comment out or remove the compress library if not needed
-   // implementation 'io.github.lucksiege:compress:v3.11.3'
-   ```
+3. **Known Issue**: PictureSelector's `libimage_processing_util_jni.so` (from compress library) may still show 16KB warnings. Options:
+   - **Option A**: Comment out the compress library in `android/build.gradle` if image compression is not needed:
+     ```gradle
+     // implementation 'io.github.lucksiege:compress:v3.11.2'
+     ```
+   - **Option B**: Wait for PictureSelector to update their native libraries with 16KB support
+   - The library may still work on most devices despite the warning
 
 This ensures compatibility with devices like Pixel 9 series and other Android 15+ devices using 16KB page size.
 
